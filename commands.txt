@@ -1,0 +1,17 @@
+#################### DataBase ####################
+
+sqlite3 currency.db
+
+CREATE TABLE currency(id integer NOT NULL, cur text NOT NULL, desc text);
+
+SELECT * FROM currency;
+
+#################### pm2 ####################
+
+pm2 start currencyBot.py --interpreter=/usr/bin/python3
+
+pm2 status
+pm2 start 0
+pm2 restart 0
+pm2 stop 0
+pm2 list

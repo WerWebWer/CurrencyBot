@@ -1,0 +1,3 @@
+BOT_TOKEN = ''
+USERNAME_ADMIN = ''
+ID_ADMIN = 

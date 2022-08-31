@@ -2,17 +2,20 @@
 
 import sqlite3
 import logging
+from logging import FileHandler, DEBUG
+
+import config
 
 conn = None
 cursor = None
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(lineno)d - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def db_connect():
     global conn
     global cursor
-    conn = sqlite3.connect('currency.db', check_same_thread=False)
+    conn = sqlite3.connect(config.db_file, check_same_thread=False)
     cursor = conn.cursor()
     logger.info("The sqlite connected")
 
@@ -23,7 +26,7 @@ def db_disconnect():
         logger.info("The sqlite connection is closed")
 
 def db_add_new(id: int, cur: str):
-    if db_find(id): # don't find
+    if db_dont_find(id): # don't find
         logger.info("Add new id = " + str(id) + " cur = " + str(cur))
         cursor.execute('INSERT INTO currency (id, cur) VALUES (?, ?)', (id, cur))
         conn.commit()
@@ -32,21 +35,27 @@ def db_add_new(id: int, cur: str):
         logger.info("Id already exists. Id = " + str(id))
 
 def db_get_cur(id: int):
-    try:
-        sql_select_query = """select * from currency where id = ?"""
-        cursor.execute(sql_select_query, (id,))
-        records = cursor.fetchall()
-        # print("Printing ID ", id)
-        # for row in records:
-        #     print("Currency = ", row[1])
-        #     print("Description  = ", row[2])
-        logger.info("Return for " + str(id) + " cur: " + str(records[0][1]))
-        return records[0][1]
-    except sqlite3.Error as error:
-        logger.error("Failed to read data from sqlite table", error)
+    if db_dont_find(id): # don't find
+        db_add_new(id, config.DEFAULT_CUR)
+        return config.DEFAULT_CUR
+    else: # find
+        try:
+            sql_select_query = """select * from currency where id = ?"""
+            cursor.execute(sql_select_query, (id,))
+            records = cursor.fetchall()
+            # print("Printing ID ", id)
+            # for row in records:
+            #     print("Currency = ", row[1])
+            #     print("Description  = ", row[2])
+            logger.info("Return for " + str(id) + " cur: " + str(records[0][1]))
+            return records[0][1]
+        except sqlite3.Error as error:
+            logger.error("Failed to read data from sqlite table", error)
 
 def db_update_value(id: int, currency: str):
     logger.info("Set for " + str(id) + " value cur = " + str(currency))
+    if db_dont_find(id): # don't find
+        db_add_new(id, config.DEFAULT_CUR)
     try:
         sql_update_query = """Update currency set cur = ? where id = ?"""
         data = (currency, id)
@@ -76,7 +85,7 @@ def db_delete_row(id: int):
     except sqlite3.Error as error:
         logger.error("Failed to delete row from table", error)
 
-def db_find(id: int):
+def db_dont_find(id: int):
     logger.info("Find " + str(id))
     try:
         sql_update_query = """SELECT * from currency where id = ?"""
@@ -100,7 +109,7 @@ def dp_print_table():
 
 # db_connect()
 # dp_print_table()
-# db_find(353383641)
+# db_dont_find(353383641)
 # db_delete_row(368696588)
 # db_add_new(4, 123)
 # db_update_value(3, 1)
